@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import authRouter from './routes/auth.routes.js'
+import contactsRouter from './routes/contacts.routes.js'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './swagger.js'
 
@@ -16,7 +17,9 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api/auth', authRouter)
+app.use('/api/contacts', contactsRouter)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+
 
 app.use((err, req, res, next) => {
   console.error(err)
