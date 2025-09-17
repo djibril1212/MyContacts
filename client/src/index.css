@@ -51,3 +51,6 @@ button:hover { background: #0056b3; }
   border-bottom: 1px solid #eee;
 }
 .contact-list li span { align-self: center; }
+
+.contact-list li > div:last-child { display:flex; gap: 8px; justify-content: flex-end; }
+.contact-list li button { white-space: nowrap; }

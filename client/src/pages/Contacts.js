@@ -7,6 +7,9 @@ export default function Contacts () {
   const [items, setItems] = useState([])
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' })
   const [err, setErr] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', phone: '' })
+  const [loadingId, setLoadingId] = useState(null) // pour désactiver un bouton pendant une requête
 
   useEffect(() => {
     attachToken(token)
@@ -34,12 +37,38 @@ export default function Contacts () {
     }
   }
 
+  function startEdit (c) {
+    setEditingId(c._id)
+    setEditForm({ firstName: c.firstName, lastName: c.lastName, phone: c.phone })
+  }
+
+  function cancelEdit () {
+    setEditingId(null)
+    setEditForm({ firstName: '', lastName: '', phone: '' })
+  }
+
+  async function saveEdit (id) {
+    try {
+      setLoadingId(id)
+      const { data } = await api.patch(`/api/contacts/${id}`, editForm)
+      setItems(prev => prev.map(x => (x._id === id ? data : x)))
+      cancelEdit()
+    } catch (e) {
+      setErr(e?.response?.data?.message || 'Échec de la mise à jour')
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
   async function remove (id) {
     try {
+      setLoadingId(id)
       await api.delete(`/api/contacts/${id}`)
       setItems(prev => prev.filter(x => x._id !== id))
     } catch (e) {
       setErr(e?.response?.data?.message || 'Échec de suppression')
+    } finally {
+      setLoadingId(null)
     }
   }
 
@@ -70,14 +99,49 @@ export default function Contacts () {
       {err && <p style={{color:'crimson', marginTop:8}}>{err}</p>}
 
       <ul className="contact-list">
-        {items.map(c => (
-          <li key={c._id}>
-            <span>{c.firstName}</span>
-            <span>{c.lastName}</span>
-            <span>{c.phone}</span>
-            <button onClick={() => remove(c._id)}>Supprimer</button>
-          </li>
-        ))}
+        {items.map(c => {
+          const isEditing = editingId === c._id
+          return (
+            <li key={c._id} style={{ alignItems: 'center' }}>
+              {isEditing ? (
+                <>
+                  <input
+                    value={editForm.firstName}
+                    onChange={e => setEditForm({ ...editForm, firstName: e.target.value })}
+                  />
+                  <input
+                    value={editForm.lastName}
+                    onChange={e => setEditForm({ ...editForm, lastName: e.target.value })}
+                  />
+                  <input
+                    value={editForm.phone}
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                  />
+                  <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+                    <button type="button" onClick={() => saveEdit(c._id)} disabled={loadingId === c._id}>
+                      {loadingId === c._id ? '...' : 'Sauver'}
+                    </button>
+                    <button type="button" onClick={cancelEdit} style={{ background:'#6c757d' }}>
+                      Annuler
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span>{c.firstName}</span>
+                  <span>{c.lastName}</span>
+                  <span>{c.phone}</span>
+                  <div style={{ display:'flex', gap:8, justifyContent:'flex-end' }}>
+                    <button type="button" onClick={() => startEdit(c)}>Modifier</button>
+                    <button type="button" onClick={() => remove(c._id)} disabled={loadingId === c._id} style={{ background:'#dc3545' }}>
+                      {loadingId === c._id ? '...' : 'Supprimer'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          )
+        })}
         {items.length === 0 && <p>Aucun contact</p>}
       </ul>
     </div>
